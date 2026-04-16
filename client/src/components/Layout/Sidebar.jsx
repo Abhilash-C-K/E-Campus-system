@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-    Home, FileText, FilePlus, Settings,
+    Home, FileText, FilePlus, UserCircle,
     Clock, CheckCircle, History
 } from 'lucide-react';
 
@@ -9,14 +9,14 @@ const studentNav = [
     { to: '/dashboard', icon: Home, label: 'Dashboard' },
     { to: '/requests', icon: FileText, label: 'My Requests' },
     { to: '/new-request', icon: FilePlus, label: 'New Request' },
-    { to: '/settings', icon: Settings, label: 'Settings' },
+    { to: '/settings', icon: UserCircle, label: 'Profile' },
 ];
 
 const authorityNav = [
     { to: '/authority/dashboard', icon: Home, label: 'Dashboard' },
     { to: '/authority/queue', icon: Clock, label: 'Pending Queue' },
     { to: '/authority/history', icon: History, label: 'History' },
-    { to: '/settings', icon: Settings, label: 'Settings' },
+    { to: '/settings', icon: UserCircle, label: 'Profile' },
 ];
 
 export default function Sidebar() {
