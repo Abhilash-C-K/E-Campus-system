@@ -54,8 +54,13 @@ export function AuthProvider({ children }) {
         if (socket) socket.disconnect();
     };
 
+    const updateUser = (userData) => {
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout, socket, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, updateUser, socket, loading }}>
             {children}
         </AuthContext.Provider>
     );

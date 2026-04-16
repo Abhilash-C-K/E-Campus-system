@@ -138,6 +138,72 @@ router.get('/me', require('../middleware/auth.middleware').protect, async (req, 
     }
 });
 
+// PUT /api/auth/profile — update current user's profile
+router.put('/profile', require('../middleware/auth.middleware').protect, uploadSignature.single('signature'), async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const {
+            name, department, yearOfStudy, yearOfAdmission,
+            category, typeOfAdmission, dateOfBirth, parentName,
+            isHostler, hostelName, staffId, assignedClubs, assignedYear,
+            password, currentPassword,
+        } = req.body;
+
+        // Update common fields
+        if (name) user.name = name;
+
+        // Student-specific fields
+        if (user.role === 'student') {
+            if (department !== undefined) user.department = department;
+            if (yearOfStudy !== undefined) user.yearOfStudy = Number(yearOfStudy);
+            if (yearOfAdmission !== undefined) user.yearOfAdmission = Number(yearOfAdmission);
+            if (category !== undefined) user.category = category;
+            if (typeOfAdmission !== undefined) user.typeOfAdmission = typeOfAdmission;
+            if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
+            if (parentName !== undefined) user.parentName = parentName;
+            if (isHostler !== undefined) user.isHostler = isHostler === true || isHostler === 'true';
+            if (hostelName !== undefined) user.hostelName = user.isHostler ? hostelName : '';
+        }
+
+        // Authority-specific fields
+        if (user.role !== 'student') {
+            if (staffId !== undefined) user.staffId = staffId;
+            if (department !== undefined) user.department = department;
+            if (assignedClubs !== undefined) {
+                user.assignedClubs = Array.isArray(assignedClubs) ? assignedClubs : JSON.parse(assignedClubs || '[]');
+            }
+            if (assignedYear !== undefined) user.assignedYear = assignedYear ? Number(assignedYear) : undefined;
+
+            // Handle new signature upload
+            if (req.file) {
+                user.signatureUrl = `/uploads/signatures/${req.file.filename}`;
+            } else if (req.body.signatureBase64) {
+                const base64Data = req.body.signatureBase64.replace(/^data:image\/\w+;base64,/, '');
+                const sigDir = path.join(__dirname, '..', 'uploads', 'signatures');
+                fs.mkdirSync(sigDir, { recursive: true });
+                const filename = `sig_canvas_${Date.now()}.png`;
+                fs.writeFileSync(path.join(sigDir, filename), base64Data, 'base64');
+                user.signatureUrl = `/uploads/signatures/${filename}`;
+            }
+        }
+
+        // Password change (optional)
+        if (password && currentPassword) {
+            const match = await bcrypt.compare(currentPassword, user.passwordHash);
+            if (!match) return res.status(400).json({ message: 'Current password is incorrect' });
+            user.passwordHash = await bcrypt.hash(password, 12);
+        }
+
+        await user.save();
+        res.json({ user: sanitize(user) });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 function sanitize(user) {
     const u = user.toObject();
     delete u.passwordHash;
